@@ -11,11 +11,11 @@ _If you are planning on writing a new readme.md for a branch, I highly reccomend
 This repository follows a basic feature-branching flow. While not the most secure flow, it permits us to make fast changes, as we do not have multiple environments to deploy to.
 
 Feature branching works as so:
-1. A user creates a new issue on the [Payload 2024](https://github.com/orgs/UMass-Rocket-Team/projects/3) Project
-2. A user creates a new branch off of main with the same name and issue ID as the previously mentioned issue.
-3. The user writes their code locally, then commits and pushes code to their branch
-4. The user requests review of their branch from another team member
-5. After the user recieves approval, and all tests are passed, they can merge to main!
+1. User creates a new issue on the [Payload 2024](https://github.com/orgs/UMass-Rocket-Team/projects/3) Project
+2. User creates a new branch off of main with the same name and issue ID as the previously mentioned issue.
+3. User writes their code locally, then commits and pushes code to their branch
+4. User requests review of their branch from another team member
+5. After user recieves approval, and all tests are passed, they can merge to main!
 
 This flow method allows us to make sure that no user's individual change can break the entire codebase. Plus, git flow is a good practice to get used to!
 
