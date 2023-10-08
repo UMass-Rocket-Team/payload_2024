@@ -20,6 +20,7 @@ Feature branching works as so:
 This flow method allows us to make sure that no user's individual change can break the entire codebase. Plus, git flow is a good practice to get used to!
 
 ![An image from Microsoft of feature branching flow](https://learn.microsoft.com/en-us/azure/devops/repos/git/media/branching-guidance/featurebranching.png?view=azure-devops)
+
 _An image from [Microsoft](https://learn.microsoft.com/en-us/azure/devops/repos/git/git-branching-guidance?view=azure-devops) of feature branching_
 
 ## Running Tests
