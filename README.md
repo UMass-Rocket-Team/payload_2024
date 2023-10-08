@@ -25,5 +25,5 @@ _An image from [Microsoft](https://learn.microsoft.com/en-us/azure/devops/repos/
 
 ## Running Tests
 
-All unit and end-to-end tasks will be run as part of the git  Continuous Integration pipeline. This means that all unit tests will be run every time a user pushes to their feature branch. Pull requests will not go through unless all tests are passed.
+All unit and end-to-end tasks will be run as part of the git Continuous Integration (CI) pipeline. This means that all unit tests will be run every time a user pushes to their feature branch. Pull requests will not go through unless all tests are passed.
 
