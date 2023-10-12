@@ -1,5 +1,5 @@
 
-# Sub Scale Payload 2024
+#Payload 2024
 
 This repository is home to the University of Massachussetts Amherst Rocket Team's payload source code for the 2024 NASA SLI competition.
 
