@@ -15,7 +15,7 @@ function update ()
   if current_pos and home then
     local altitude = current_pos:alt(home)
 
-    -- case 1: over 500 ft, remain idle, keep nosecone and payload in bay
+    case 1: over 500 ft, remain idle, keep nosecone and payload in bay
     if alt > 500 then
 
       servo.set_output_pwm(servo1, servo_pos_1)
@@ -47,4 +47,4 @@ function update ()
 end
 return update, 1000
 
-  end
+end
