@@ -40,14 +40,6 @@ function update ()
       -- servo.set_output_pwm(servo1, servo_pos_2)
       -- servo.set_output_pwm(servo2, servo_pos_2)
 
-
+    return update, 250
 end
 
-      end
-
-  return update, 250
-end
-return update, 1000
-
-end
-end
