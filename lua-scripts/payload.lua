@@ -70,18 +70,13 @@ end
 function await_altitude_hold()
   gcs:send_text(0, "State: AWAITING ALTITUDE HOLD. Awaiting manual transition to ALT_HOLD")
   if vehicle:get_mode() == MODES["ALT_HOLD"]
-    
-
-  
-  vehicle:set_mode(MODES["ALT_HOLD"])
-  --NEED TO SEE HOW LONG WE NEED TO BE IN ALT HOLD FOR, and if we need to check for any params
-  return check_return_to_land 1000
+    complete()
+  end
+  await_altitude_hold()
 end
 
-function check_return_to_land()
-  gcs:send_text(0, "State: RETURN TO LAND. Attempting to return to launch...")
-  vehicle:set_mode(MODES["RTL"])
-  -- This is the final state, we may want to have another state where we write logs
+function complete()
+  gcs:send_text(0, "AUTONOMOUS CONTROL COMPLETE. MANUAL CONTROL ")
 end
 
 -- Start the script in the idle state
