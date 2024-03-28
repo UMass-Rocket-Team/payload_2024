@@ -10,25 +10,31 @@ local UNLOCKED_PAYLOAD_SERVO_POS = 2000
 local LOCKED_CONE_SERVO_POS = 1000
 local UNLOCKED_CONE_SERVO_POS = 2000
 
+--Constants--
 local DEPLOY_CHANNEL_THRESHOLD = 1200 -- A value lower than 1200 will be considered "safe to deploy"
-local MAX_NOSECONE_DEPLOYMENT_ALT = 500
-local MIN_NOSECONE_DEPLOYMENT_ALT = 400
+local MAX_NOSECONE_DEPLOYMENT_ALT = 600
+local MAX_PAYLOAD_DEPLOYMENT_ALT = 400
+local MIN_DEPLOYMENT_ALT = 200
+local FEET_IN_METER 3.281
 local MODES = {["STABILIZE"] = 0, ["ALT_HOLD"] = 2, ["RTL"] = 6}
 
 --Decorator to pass standardized data
 function standard_data_collection(f)
+  local dist = ahrs:get_relative_position_NED_home()
+  local altitudeMeters = -1*dist:z()
+  local altitudeFeet = altitudeMeters / FEET_IN_METER
+  gcs:send_text(0, "Altitude: " .. altitude)
   return function(self)
-    local dist = ahrs:get_relative_position_NED_home()
-    local altitude = -1*dist:z()
-    gcs:send_text(0, "Altitude: " .. altitude)
-    return f(self, altitude)
+    if rc:get_pwm(11) < DEPLOY_CHANNEL_THRESHOLD then
+      return f(self, altitude)
+    end
+      return standard_data_collection(f) FREQUENCY
   end
 end
 
 function startup()
   -- Zero altitude (REMOVE IF THIS SCRIPT IS NOT STARTED ON LAUNCH) and sets home
   ahrs:set_home(ahrs:get_location())
-  vehicle:set_mode(MODES["STABILIZE"])
   return standard_data_collection(idle(self, altitude)) FREQUENCY
 end
 
@@ -48,8 +54,8 @@ end
 -- Description: Checks the altitude of the current position and deploys the payload cone if the altitude is within the specified range.
 -- Returns: Changes to state deploy_payload if the altitude is within the specified range, otherwise returns to check_deploy_cone
 function check_deploy_cone(altitude)
-  gcs:send_text(0, "State: CONE DEPLOYMENT. Checking for deployment altitude [min:" .. MIN_NOSECONE_DEPLOYMENT_ALT .. ", max:" .. MAX_NOSECONE_DEPLOYMENT_ALT .. "]")
-  if MAX_NOSECONE_DEPLOYMENT_ALT > altitude > MIN_NOSECONE_DEPLOYMENT_ALT then
+  gcs:send_text(0, "State: CONE DEPLOYMENT. Checking for deployment altitude [min:" .. MIN_DEPLOYMENT_ALT .. ", max:" .. MAX_NOSECONE_DEPLOYMENT_ALT .. "]")
+  if MAX_NOSECONE_DEPLOYMENT_ALT > altitude > MIN_DEPLOYMENT_ALT then
     gcs:send_text(0, "Deploying nosecone...")
     SRV_Channels:set_output_pwm(cone_servo_channel, UNLOCKED_CONE_SERVO_POS)
     return standard_data_collection(deploy_payload(self, altitude)), FREQUENCY
@@ -61,11 +67,14 @@ end
 -- Function: deploy_payload
 -- Description: Deploys the payload by unlocking the retention servos and then arming and stabilizing the system.
 -- Returns: Changes state to arm_drone.
-function deploy_payload()
-  gcs:send_text(0, "State: PAYLOAD DEPLOYMENT. Deploying payload...")
-  SRV_Channels:set_output_pwm(payload_servo_channel, UNLOCKED_PAYLOAD_SERVO_POS)
+function check_deploy_payload()
+  gcs:send_text(0, "State: PAYLOAD DEPLOYMENT. Checking for deployment altitude [min:" .. MIN_DEPLOYMENT_ALT .. ", max:" .. MAX_PAYLOAD_DEPLOYMENT_ALT .. "]")
+  if MAX_PAYLOAD_DEPLOYMENT_ALT > altitude > MIN_DEPLOYMENT_ALT then
+    gcs:send_text(0, "Deploying payload...")
+    SRV_Channels:set_output_pwm(payload_servo_channel, UNLOCKED_PAYLOAD_SERVO_POS)
+    return standard_data_collection(await_altitude_hold(self, alt)) FREQUENCY
   --NEED TO SEE HOW LONG WE NEED TO WAIT BEFORE VEHICLE LEAVES PAYLOAD, and if we need to check for any params
-  return standard_data_collection(check_deploy_cone(self, alt)) FREQUENCY
+  end
 end
 
 function await_altitude_hold()
@@ -77,7 +86,7 @@ function await_altitude_hold()
 end
 
 function complete()
-  gcs:send_text(0, "AUTONOMOUS CONTROL COMPLETE. MANUAL CONTROL ")
+  gcs:send_text(0, "AUTONOMOUS CONTROL COMPLETE. MANUAL SWITCH TO RTL REQUIRED")
 end
 
 -- Start the script in the idle state
