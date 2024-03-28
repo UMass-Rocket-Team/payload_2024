@@ -24,14 +24,16 @@ function run_alt()
     gcs:send_text(0, "Altitude (ft): " .. altitudeFeet)
     if MAX_NOSECONE_DEPLOYMENT_ALT > altitudeFeet
         SRV_Channels:set_output_pwm(cone_servo_channel, UNLOCKED_CONE_SERVO_POS)
-    else
+        gcs:send_text(0, "Nosecone Unlocked")
+    else --else usage not great practice, but just for testing...
         SRV_Channels:set_output_pwm(cone_servo_channel, LOCKED_CONE_SERVO_POS)
     end
 
     if MAX_PAYLOAD_DEPLOYMENT_ALT > altitudeFeet
         SRV_Channels:set_output_pwm(payload_servo_channel, UNLOCKED_PAYLOAD_SERVO_POS)
-    else
-        SRV_Channels:set_output_pwm(cone_servo_channel, LOCKED_CONE_SERVO_POS)
+        gcs:send_text(0, "Payload Unlocked")
+    else --else usage not great practice, but just for testing...
+        SRV_Channels:set_output_pwm(payload_servo_channel, LOCKED_PAYLOAD_SERVO_POS)
     end
 end
 
