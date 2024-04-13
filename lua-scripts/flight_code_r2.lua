@@ -20,7 +20,7 @@ local alt_agl -- the best estimate of the altitude above ground level
 -- running average altitude filtering data
 local baro_ringbuff_arr = {} -- ringbuffer array
 local baro_ringbuff_idx = 1 -- current ringbuffer index
-local baro_running_alt_n_samples = 10 -- number of samples to average over
+local baro_running_alt_n_samples = 30 -- number of samples to average over
 
 -- barometer offset variables
 local baro_alt_offset -- offset between true starting altitude and barometric reading
@@ -30,8 +30,18 @@ local baro_offset_alt_n_samples = 100 -- number of samples to take
 
 -- landing zone position variables
 local position_target_landing = Location()
-position_target_landing:lat(423790080)
-position_target_landing:lng(-725136008)
+
+-- field in amherst
+-- position_target_landing:lat(423790080)
+-- position_target_landing:lng(-725136008)
+
+-- tenative landing zone
+-- position_target_landing:lat(348954070)
+-- position_target_landing:lng(-866183470)
+
+-- landing zone as of night before launch
+position_target_landing:lat(348954069)
+position_target_landing:lng(-866183745)
 
 local altitude_launchpad
 local altitude_launchpad_tmp = 0.0 -- temporary position of the launchpad while averaging
@@ -42,11 +52,11 @@ local position_launchpad_n_samples = 100 -- number of samples to take
 -- servo control variables
 
 -- timing values
-local servo_wiggle_delay_ms = 500 -- time in ms between "wiggles" on the servos
+local servo_wiggle_delay_ms = 1000 -- time in ms between "wiggles" on the servos
 
 -- angle values for nosecone and payload
-local servo_deployed_value_nosecone = 2000 -- deployment value in microseconds for nosecone
-local servo_deployed_value_payload = 1000 -- deployment value in microseconds for payload
+local servo_deployed_value_nosecone = 1700 -- deployment value in microseconds for nosecone
+local servo_deployed_value_payload = 1300 -- deployment value in microseconds for payload
 local servo_stowed_value_nosecone = 1000 -- stowing value in microseconds for nosecone
 local servo_stowed_value_payload = 2000 -- stowing value in microseconds for payload
 
@@ -57,10 +67,10 @@ local servo_last_wiggle_time_payload_ms = 0 -- time of the last "wiggle" from de
 local servo_last_wiggle_time_nosecone_ms = 0 -- time of the last "wiggle" from deployed to stowed positions on both servos
 
 -- deployment altitude constants
-local deployment_altitude_nosecone_ft = 650 -- altitude to start the deployment sequence for the nosecone
+local deployment_altitude_nosecone_ft = 600 -- altitude to start the deployment sequence for the nosecone
 local deployment_altitude_payload_ft = 400 -- altitude to start the deployment sequence for the payload
 local deployment_floor_nosecone_ft = 400 -- dont deploy nosecone under 400ft
-local deployment_floor_payload_ft = 200 -- dont deploy payload under 200ft
+local deployment_floor_payload_ft = 175 -- dont deploy payload under 175ft
 
 -- state values
 local vehicle_mode_guided = 4
@@ -164,6 +174,13 @@ function update ()
 
     local position_ekf_raw = ahrs:get_position()
 
+    if position_ekf_raw then
+
+        ostr = "distance to launchpad: " .. position_ekf_raw:distance(position_target_landing)
+        gcs:send_text(1, ostr)
+        
+    end
+
     -- update home position
     if ahrs:home_is_set() then
         local homepos = ahrs:get_home()
@@ -185,18 +202,18 @@ function update ()
         ekf_estimate_valid = true
 
         if pad_level_en and not launchpad_initial_position_lock then
-
+            gcs:send_text(1, "averaging launchpad positon")
             altitude_launchpad_tmp = altitude_launchpad_tmp + (position_ekf_raw:alt() / 100.0)
             position_launchpad_sample_num = position_launchpad_sample_num + 1
 
             if position_launchpad_sample_num >= position_launchpad_n_samples then
                 altitude_launchpad = altitude_launchpad_tmp / position_launchpad_sample_num
-                position_target_landing:alt(altitude_launchpad*100)
+                -- position_target_landing:alt(altitude_launchpad*100)
                 launchpad_initial_position_lock = true
                 gcs:send_text(0, "launchpad initial position lock")
             end
 
-        end
+        end 
 
     else 
         ekf_estimate_valid = false
@@ -242,7 +259,7 @@ function update ()
         else
             ostr = ostr .. "b): "
         end
-        ostr = ostr .. tostring(alt_agl)
+        ostr = ostr .. tostring(alt_agl * 3.28084)
         gcs:send_text(1, ostr)
     end 
 
@@ -255,7 +272,7 @@ function update ()
 
             if alt_agl_ft <= deployment_altitude_nosecone_ft then
 
-                if millis() > servo_last_wiggle_time_nosecone_ms + servo_wiggle_delay_ms then
+                if millis() > servo_last_wiggle_time_nosecone_ms + servo_wiggle_delay_ms and alt_agl_ft >= deployment_floor_nosecone_ft then
 
                     if servo_angle_nosecone_cur == servo_stowed_value_nosecone then
                         servo_angle_nosecone_cur = servo_deployed_value_nosecone
@@ -269,19 +286,17 @@ function update ()
 
                 end
 
-                if alt_agl_ft <= deployment_floor_nosecone_ft then
+                if alt_agl_ft <= deployment_floor_nosecone_ft then                
 
-                    servo_angle_nosecone_cur = servo_deployed_value_nosecone
+                    servo_angle_nosecone_cur = servo_stowed_value_nosecone
 
                 end
 
-            else
-                servo_angle_nosecone_cur = servo_stowed_value_nosecone
             end
 
             if alt_agl_ft <= deployment_altitude_payload_ft then
 
-                if millis() > servo_last_wiggle_time_payload_ms + servo_wiggle_delay_ms then
+                if millis() > servo_last_wiggle_time_payload_ms + servo_wiggle_delay_ms and alt_agl_ft >= deployment_floor_payload_ft then
 
                     if servo_angle_payload_cur == servo_stowed_value_payload then
                         servo_angle_payload_cur = servo_deployed_value_payload
@@ -295,14 +310,12 @@ function update ()
 
                 end
 
-                if alt_agl_ft <= deployment_floor_payload_ft then
+                if alt_agl_ft <= deployment_floor_payload_ft then                
 
-                    servo_angle_payload_cur = servo_deployed_value_payload
+                    servo_angle_payload_cur = servo_stowed_value_payload
 
                 end
 
-            else
-                servo_angle_payload_cur = servo_stowed_value_payload
             end
         
         end
@@ -318,6 +331,12 @@ function update ()
     -- update servo positions
     SRV_Channels:set_output_pwm_chan(nosecone_deployment_servo_id, servo_angle_nosecone_cur)
     SRV_Channels:set_output_pwm_chan(payload_deployment_servo_id, servo_angle_payload_cur)
+
+    -- local ostr = "nosecone: " .. tostring(servo_angle_nosecone_cur)
+    -- gcs:send_text(1, ostr)
+    -- ostr = "payload: " .. tostring(servo_angle_payload_cur)
+    -- gcs:send_text(1, ostr)
+
 
     -- run again in 50ms (20Hz loop)
     return update, 50
